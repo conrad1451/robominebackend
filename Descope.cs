@@ -1,13 +1,10 @@
 using Descope;
 using Microsoft.AspNetCore.Http;
 
+// CHQ: Claude AI (Sonnet) generated file
+
 namespace DescopeScalewayApi;
 
-/// <summary>
-/// Represents the outcome of an optional auth check: either an authenticated
-/// user, or an explicit "no/invalid token" result that callers can branch on
-/// without ever throwing for the anonymous case.
-/// </summary>
 public record AuthResult(bool IsAuthenticated, string? UserId, string? Email);
 
 public static class DescopeAuth
@@ -15,7 +12,7 @@ public static class DescopeAuth
     private static readonly AuthResult Anonymous = new(false, null, null);
 
     public static async Task<AuthResult> TryAuthenticateAsync(
-        DescopeClient descopeClient,
+        IDescopeClient descopeClient,
         HttpRequest request)
     {
         var token = ExtractBearerToken(request);
@@ -26,11 +23,11 @@ public static class DescopeAuth
 
         try
         {
-            var validated = await descopeClient.Auth.ValidateSession(token);
+            var validated = await descopeClient.Auth.ValidateSessionAsync(token);
             return new AuthResult(
                 IsAuthenticated: true,
-                UserId: validated.Token.Subject,
-                Email: validated.Token.Claims.TryGetValue("email", out var email)
+                UserId: validated.Subject,
+                Email: validated.Claims.TryGetValue("email", out var email)
                     ? email?.ToString()
                     : null);
         }
@@ -41,7 +38,7 @@ public static class DescopeAuth
     }
 
     public static async Task<AuthResult> RequireAuthenticationAsync(
-        DescopeClient descopeClient,
+        IDescopeClient descopeClient,
         HttpRequest request)
     {
         var result = await TryAuthenticateAsync(descopeClient, request);
