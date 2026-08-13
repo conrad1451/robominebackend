@@ -1,67 +1,66 @@
 using Descope;
-using DescopeScalewayApi;
+using Microsoft.AspNetCore.Http;
 
-// CHQ: Claude AI (Sonnet) generated file
+namespace DescopeScalewayApi;
 
-var builder = WebApplication.CreateBuilder(args);
+/// <summary>
+/// Represents the outcome of an optional auth check: either an authenticated
+/// user, or an explicit "no/invalid token" result that callers can branch on
+/// without ever throwing for the anonymous case.
+/// </summary>
+public record AuthResult(bool IsAuthenticated, string? UserId, string? Email);
 
-// Scaleway Containers injects the PORT env var; the container must listen
-// on it. Default to 8080 for local runs.
-var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
-
-// DESCOPE_PROJECT_ID comes from the container's environment variables,
-// set as a Scaleway container env var / secret - never hardcoded.
-var projectId = Environment.GetEnvironmentVariable("DESCOPE_PROJECT_ID")
-    ?? throw new InvalidOperationException("DESCOPE_PROJECT_ID environment variable is not set.");
-
-var descopeConfig = new DescopeConfig(projectId: projectId);
-
-// Singleton: the SDK caches Descope's public keys internally, so reusing
-// one client across requests avoids refetching them each time.
-builder.Services.AddSingleton(new DescopeClient(descopeConfig));
-
-var app = builder.Build();
-
-// GET /public - never requires login. Works identically whether or not a
-// token is sent; it just personalizes the response when one is valid.
-// This is the "optional login" pattern: try to authenticate, fall back to
-// a guest response instead of rejecting the request.
-app.MapGet("/public", async (HttpRequest request, DescopeClient descopeClient) =>
+public static class DescopeAuth
 {
-    var auth = await DescopeAuth.TryAuthenticateAsync(descopeClient, request);
+    private static readonly AuthResult Anonymous = new(false, null, null);
 
-    var message = auth.IsAuthenticated
-        ? $"Welcome back, {auth.Email ?? auth.UserId}!"
-        : "Welcome, guest! Log in for a personalized view.";
-
-    return Results.Ok(new
+    public static async Task<AuthResult> TryAuthenticateAsync(
+        DescopeClient descopeClient,
+        HttpRequest request)
     {
-        message,
-        isAuthenticated = auth.IsAuthenticated,
-    });
-});
-
-// GET /profile - requires a valid Descope session. Returns 401 if the token
-// is missing or invalid.
-app.MapGet("/profile", async (HttpRequest request, DescopeClient descopeClient) =>
-{
-    try
-    {
-        var auth = await DescopeAuth.RequireAuthenticationAsync(descopeClient, request);
-        return Results.Ok(new
+        var token = ExtractBearerToken(request);
+        if (string.IsNullOrEmpty(token))
         {
-            userId = auth.UserId,
-            email = auth.Email,
-        });
+            return Anonymous;
+        }
+
+        try
+        {
+            var validated = await descopeClient.Auth.ValidateSession(token);
+            return new AuthResult(
+                IsAuthenticated: true,
+                UserId: validated.Token.Subject,
+                Email: validated.Token.Claims.TryGetValue("email", out var email)
+                    ? email?.ToString()
+                    : null);
+        }
+        catch (DescopeException)
+        {
+            return Anonymous;
+        }
     }
-    catch (UnauthorizedAccessException)
+
+    public static async Task<AuthResult> RequireAuthenticationAsync(
+        DescopeClient descopeClient,
+        HttpRequest request)
     {
-        return Results.Json(new { error = "Login required." }, statusCode: 401);
+        var result = await TryAuthenticateAsync(descopeClient, request);
+        if (!result.IsAuthenticated)
+        {
+            throw new UnauthorizedAccessException("A valid session token is required.");
+        }
+        return result;
     }
-});
 
-// Scaleway Containers health checks expect a 200 somewhere reachable.
-app.MapGet("/", () => Results.Ok(new { status = "ok" }));
+    private static string? ExtractBearerToken(HttpRequest request)
+    {
+        var header = request.Headers.Authorization.ToString();
 
-app.Run();
+        if (string.IsNullOrEmpty(header) || !header.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        return header["Bearer ".Length..].Trim();
+    }
+}
