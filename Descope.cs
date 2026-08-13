@@ -10,13 +10,14 @@ public record AuthResult(bool IsAuthenticated, string? UserId, string? Email);
 public static class DescopeAuth
 {
     private static readonly AuthResult Anonymous = new(false, null, null);
+    private const string BearerPrefix = "Bearer ";
 
     public static async Task<AuthResult> TryAuthenticateAsync(
         IDescopeClient descopeClient,
         HttpRequest request)
     {
         var token = ExtractBearerToken(request);
-        if (string.IsNullOrEmpty(token))
+        if (string.IsNullOrWhiteSpace(token))
         {
             return Anonymous;
         }
@@ -24,14 +25,20 @@ public static class DescopeAuth
         try
         {
             var validated = await descopeClient.Auth.ValidateSessionAsync(token);
+
+            string? email = null;
+            if (validated.Claims.TryGetValue("email", out var emailClaim) && emailClaim is not null)
+            {
+                email = emailClaim.ToString();
+            }
+
             return new AuthResult(
                 IsAuthenticated: true,
                 UserId: validated.Subject,
-                Email: validated.Claims.TryGetValue("email", out var email)
-                    ? email?.ToString()
-                    : null);
+                Email: email
+            );
         }
-        catch (DescopeException)
+        catch (Exception) // Gracefully capture DescopeException, HTTP errors, or token parse errors
         {
             return Anonymous;
         }
@@ -44,7 +51,7 @@ public static class DescopeAuth
         var result = await TryAuthenticateAsync(descopeClient, request);
         if (!result.IsAuthenticated)
         {
-            throw new UnauthorizedAccessException("A valid session token is required.");
+            throw new BadHttpRequestException("A valid Bearer session token is required.", StatusCodes.Status401Unauthorized);
         }
         return result;
     }
@@ -53,11 +60,11 @@ public static class DescopeAuth
     {
         var header = request.Headers.Authorization.ToString();
 
-        if (string.IsNullOrEmpty(header) || !header.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        if (string.IsNullOrWhiteSpace(header) || !header.StartsWith(BearerPrefix, StringComparison.OrdinalIgnoreCase))
         {
             return null;
         }
 
-        return header["Bearer ".Length..].Trim();
+        return header[BearerPrefix.Length..].Trim();
     }
 }
