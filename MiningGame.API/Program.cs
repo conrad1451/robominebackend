@@ -6,7 +6,9 @@ using MiningGame.API.Services;
 using Serilog;
 using System.Text;
 
-var builder = WebApplicationBuilder.CreateBuilder(args);
+
+// CHQ: Gemini AI: Fix WebApplication.CreateBuilder syntax
+var builder = WebApplication.CreateBuilder(args);
 
 // Logging
 Log.Logger = new LoggerConfiguration()

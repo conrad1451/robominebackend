@@ -132,7 +132,8 @@ public async Task CollectResourcesAsync(Guid playerId)
             var material = player.Materials.FirstOrDefault(m => m.Type.ToString() == mine.Type.ToString());
             if (material != null)
             {
-                material.Quantity += generatedAmount;
+                // CHQ: Gemini - variable labeled with long
+                material.Quantity += (long)generatedAmount;
             }
 
             mine.LastCollectedAt = now;

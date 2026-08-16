@@ -24,6 +24,8 @@ public class Mine
     public int RobotsAssigned { get; set; } = 0;
     public int MaxCapacity { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
+    
+    // CHQ: Gemini AI: Add missing LastCollectedAt property
+    public DateTime? LastCollectedAt { get; set; }
     public ICollection<Robot> Robots { get; set; } = new List<Robot>();
 }
