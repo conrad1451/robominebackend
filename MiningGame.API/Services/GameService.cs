@@ -99,6 +99,47 @@ public class GameService
         return player;
     }
 
-    public async Task CollectResourcesAsync(Guid playerId);
+// CHQ: Gemimi AI: handled calcuations as Anti-Cheat & Security measure
+public async Task CollectResourcesAsync(Guid playerId)
+{
+    var player = await _context.Players
+        .Include(p => p.Mines)
+        .Include(p => p.Materials)
+        .FirstOrDefaultAsync(p => p.Id == playerId);
+
+    if (player == null)
+    {
+        _logger.LogWarning("Player {PlayerId} not found when attempting to collect resources.", playerId);
+        return;
+    }
+
+    var now = DateTime.UtcNow;
+
+    foreach (var mine in player.Mines)
+    {
+        // Calculate seconds elapsed since last collection tick (defaulting to current time if null)
+        var lastCollected = mine.LastCollectedAt ?? now;
+        var elapsedSeconds = (decimal)(now - lastCollected).TotalSeconds;
+
+        if (elapsedSeconds <= 0) continue;
+
+        // Calculate accrued resources capped at mine capacity
+        var generatedAmount = Math.Min(elapsedSeconds * mine.ResourcePerSecond, mine.MaxCapacity);
+
+        if (generatedAmount > 0)
+        {
+            // Locate target material corresponding to mine type
+            var material = player.Materials.FirstOrDefault(m => m.Type.ToString() == mine.Type.ToString());
+            if (material != null)
+            {
+                material.Quantity += generatedAmount;
+            }
+
+            mine.LastCollectedAt = now;
+        }
+    }
+
+    await _context.SaveChangesAsync();
+}
 }
     
