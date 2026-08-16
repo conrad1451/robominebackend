@@ -99,5 +99,6 @@ public class GameService
         return player;
     }
 
-    public async Task CollectResourcesAsync(Guid playerId)
+    public async Task CollectResourcesAsync(Guid playerId);
+}
     
