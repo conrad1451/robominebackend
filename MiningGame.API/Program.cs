@@ -1,11 +1,11 @@
+using System.Text;
+using Serilog;
+using Microsoft.OpenApi.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using MiningGame.API.Data;
 using MiningGame.API.Services;
-using Serilog;
-using System.Text;
-
 
 // CHQ: Gemini AI: Fix WebApplication.CreateBuilder syntax
 var builder = WebApplication.CreateBuilder(args);
@@ -64,15 +64,13 @@ builder.Services.AddCors(options =>
 
 // Services
 builder.Services.AddScoped<GameService>();
-builder.Services.AddScoped<MiningService>();
-builder.Services.AddScoped<ProcessingService>();
-builder.Services.AddScoped<RobotService>();
+// Replace individual service registrations with GameService:
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-var app = builder.CreateBuilder().Build();
+var app = builder.Build();
 
 // Migrations
 using (var scope = app.Services.CreateScope())
