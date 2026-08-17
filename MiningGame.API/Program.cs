@@ -1,6 +1,5 @@
-using System.Text;
+using System.Security.Claims;
 using Serilog;
-// using Microsoft.OpenApi.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -25,32 +24,32 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<GameDbContext>(options =>
     options.UseNpgsql(connectionString));
 
-// JWT Authentication
-var jwtKey = builder.Configuration["Jwt:Key"]
-    ?? throw new InvalidOperationException("JWT Key not configured.");
-var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "MiningGame";
-var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "MiningGameClient";
+// --- Descope Authentication Setup ---
+var descopeProjectId = builder.Configuration["Descope:ProjectId"]
+    ?? builder.Configuration["DESCOPE_PROJECT_ID"]
+    ?? throw new InvalidOperationException("Descope Project ID is not configured.");
+
+var descopeAuthority = $"https://api.descope.com/{descopeProjectId}";
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        options.Authority = descopeAuthority;
+        options.Audience = descopeProjectId;
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
             ValidateIssuer = true,
-            ValidIssuer = jwtIssuer,
+            ValidIssuer = descopeAuthority,
             ValidateAudience = true,
-            ValidAudience = jwtAudience,
-            ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero,
+            ValidAudience = descopeProjectId,
+            ValidateLifetime = true
         };
     });
 
 builder.Services.AddAuthorization();
 
-// CORS
+// CORS Configuration
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -64,8 +63,6 @@ builder.Services.AddCors(options =>
 
 // Services
 builder.Services.AddScoped<GameService>();
-// Replace individual service registrations with GameService:
-
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
