@@ -17,9 +17,22 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
-// Database
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+// Database Setup
+string? connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+if (string.IsNullOrEmpty(connectionString))
+{
+    var databaseUrl = builder.Configuration["DATABASE_URL"];
+    if (!string.IsNullOrEmpty(databaseUrl))
+    {
+        connectionString = ConvertPostgresUrlToConnectionString(databaseUrl);
+    }
+}
+
+if (string.IsNullOrEmpty(connectionString))
+{
+    throw new InvalidOperationException("Connection string 'DefaultConnection' or 'DATABASE_URL' was not found.");
+}
 
 builder.Services.AddDbContext<GameDbContext>(options =>
     options.UseNpgsql(connectionString));
@@ -89,3 +102,18 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+static string ConvertPostgresUrlToConnectionString(string url)
+{
+    var uri = new Uri(url);
+    
+    // Unescape encoded characters (e.g., %40 -> @) in username/password
+    var rawUserInfo = uri.UserInfo.Split(':', 2);
+    var username = rawUserInfo.Length > 0 ? Uri.UnescapeDataString(rawUserInfo[0]) : "";
+    var password = rawUserInfo.Length > 1 ? Uri.UnescapeDataString(rawUserInfo[1]) : "";
+    
+    var port = uri.Port > 0 ? uri.Port : 5432;
+    var database = uri.AbsolutePath.TrimStart('/');
+
+    return $"Host={uri.Host};Port={port};Database={database};Username={username};Password={password};SSL Mode=Require;Trust Server Certificate=true;Pooling=true;";
+}
