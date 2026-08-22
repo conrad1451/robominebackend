@@ -44,6 +44,41 @@ public class GameService
             .FirstOrDefaultAsync(p => p.Id == playerId);
     }
 
+    public async Task<Player?> GetPlayerByEmailAsync(string email)
+    {
+        return await _context.Players
+            .Include(p => p.Mines)
+            .Include(p => p.Robots)
+            .Include(p => p.Materials)
+            .FirstOrDefaultAsync(p => p.Email == email);
+    }
+
+    // Looks up the player tied to this Descope-authenticated email, creating
+    // one (with starter mines/materials) on first login.
+    public async Task<Player> GetOrCreatePlayerByEmailAsync(string email, string? preferredUsername = null)
+    {
+        var existing = await GetPlayerByEmailAsync(email);
+        if (existing != null)
+        {
+            existing.LastPlayedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            return existing;
+        }
+
+        var username = preferredUsername ?? email.Split('@')[0];
+
+        // Ensure username uniqueness in the rare case of a collision.
+        var baseUsername = username;
+        var suffix = 1;
+        while (await _context.Players.AnyAsync(p => p.Username == username))
+        {
+            username = $"{baseUsername}{suffix++}";
+        }
+
+        var created = await CreatePlayerAsync(username, email);
+        return (await GetPlayerAsync(created.Id))!;
+    }
+
     public async Task<Player> CreatePlayerAsync(string username, string email)
     {
         var player = new Player
@@ -143,4 +178,3 @@ public async Task CollectResourcesAsync(Guid playerId)
     await _context.SaveChangesAsync();
 }
 }
-    
