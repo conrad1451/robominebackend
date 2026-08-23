@@ -76,7 +76,17 @@ builder.Services.AddCors(options =>
 
 // Services
 builder.Services.AddScoped<GameService>();
-builder.Services.AddControllers();
+builder.Services.AddScoped<MiningService>();
+builder.Services.AddScoped<RobotService>();
+builder.Services.AddScoped<ProcessingService>();
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    // Serializes enums (MineType, MaterialType, RobotType) as snake_case
+    // strings ("rare_earth") to match the frontend's TS string literal types,
+    // instead of the default integer representation.
+    options.JsonSerializerOptions.Converters.Add(
+        new System.Text.Json.Serialization.JsonStringEnumConverter(System.Text.Json.JsonNamingPolicy.SnakeCaseLower));
+});
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

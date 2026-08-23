@@ -4,7 +4,9 @@ using MiningGame.API.Models;
 
 namespace MiningGame.API.Services;
 
-public class GameService
+// CHQ: Claude AI (Sonnet) generated code
+
+public class GameService    
 {
     private readonly GameDbContext _context;
     private readonly ILogger<GameService> _logger;
