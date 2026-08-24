@@ -1,2 +1,5 @@
 .env
 git-diff-edits/
+MiningGame.API/git-log/
+MiningGame.API/bin/
+MiningGame.API/obj/
