@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Security.Claims;
 using Serilog;
 using Microsoft.EntityFrameworkCore;
@@ -48,14 +49,30 @@ builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        // Authority is only used to fetch the JWKS (signing keys) for
+        // signature verification - this endpoint is always available at this
+        // path regardless of JWT Template configuration, so it's safe as-is.
         options.Authority = descopeAuthority;
-        options.Audience = descopeProjectId;
+
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
-            ValidIssuer = descopeAuthority,
+            // Descope's default session tokens set `iss` to the bare project
+            // ID (e.g. "P2abc..."). The `iss` only becomes the full
+            // "https://api.descope.com/<projectId>" URL if the project has
+            // the "AWS API Gateway" JWT Template enabled in the Descope
+            // dashboard (Project Settings > JWT Templates). Since that's a
+            // dashboard setting this code can't see, accept both forms so
+            // auth doesn't depend on it being configured a specific way.
+            IssuerValidator = (issuer, _, _) =>
+                issuer == descopeProjectId || issuer == descopeAuthority
+                    ? issuer
+                    : throw new SecurityTokenInvalidIssuerException($"Invalid issuer '{issuer}'."),
             ValidateAudience = true,
-            ValidAudience = descopeProjectId,
+            // Same reasoning as above: `aud` is only guaranteed to equal the
+            // project ID on OIDC-compliant (templated) tokens.
+            AudienceValidator = (audiences, _, _) =>
+                audiences.Any(a => a == descopeProjectId),
             ValidateLifetime = true
         };
     });
