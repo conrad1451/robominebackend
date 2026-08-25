@@ -1,13 +1,18 @@
 // CHQ: Gemini AI created file
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
-[ApiController]
-[Route("api/[controller]")]
-public class HealthController : ControllerBase
+namespace MiningGame.API.Controllers
 {
-    [HttpGet]
-    [AllowAnonymous] // Ensures monitors can reach it without a Bearer token
-    public IActionResult Get()
+    [ApiController]
+    [Route("api/[controller]")]
+    public class HealthController : ControllerBase
     {
-        return Ok(new { status = "Healthy", timestamp = DateTime.UtcNow });
+        [HttpGet]
+        [AllowAnonymous] // Ensures monitors can reach it without a Bearer token
+        public IActionResult Get()
+        {
+            return Ok(new { status = "Healthy", timestamp = DateTime.UtcNow });
+        }
     }
 }
