@@ -5,6 +5,8 @@ using MiningGame.API.Services;
 
 namespace MiningGame.API.Controllers;
 
+// MiningGame.API/Controllers/ProcessingController.cs
+
 // CHQ: Claude AI (Sonnet) generated code
 public record SellMaterialRequest(long? Quantity);
 

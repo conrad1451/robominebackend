@@ -1,5 +1,7 @@
 namespace MiningGame.API.Models;
 
+// MiningGame.API/Models/Dtos.cs
+
 // CHQ: Claude AI (Sonnet) generated code
 
 public record PlayerDto(

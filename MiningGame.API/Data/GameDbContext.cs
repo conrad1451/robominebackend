@@ -3,6 +3,8 @@ using MiningGame.API.Models;
 
 namespace MiningGame.API.Data;
 
+// MiningGame.API/Data/GameDbContext.cs
+
 public class GameDbContext : DbContext
 {
     public GameDbContext(DbContextOptions<GameDbContext> options) : base(options) { }

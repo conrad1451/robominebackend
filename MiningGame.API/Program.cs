@@ -7,6 +7,8 @@ using Microsoft.IdentityModel.Tokens;
 using MiningGame.API.Data;
 using MiningGame.API.Services;
 
+// MiningGame.API/Program.cs
+
 // CHQ: Gemini AI: Fix WebApplication.CreateBuilder syntax
 var builder = WebApplication.CreateBuilder(args);
 

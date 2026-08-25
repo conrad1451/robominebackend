@@ -5,6 +5,9 @@ using MiningGame.API.Services;
 
 namespace MiningGame.API.Controllers;
 
+// MiningGame.API/Controllers/AuthController.cs
+
+
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]

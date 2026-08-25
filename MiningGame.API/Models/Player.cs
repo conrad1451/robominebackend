@@ -1,5 +1,7 @@
 namespace MiningGame.API.Models;
 
+// MiningGame.API/Models/Player.cs
+
 public class Player
 {
     public Guid Id { get; set; }

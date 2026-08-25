@@ -1,5 +1,7 @@
 namespace MiningGame.API.Models;
 
+// MiningGame.API/Models/Mine.cs
+
 public enum MineType
 {
     Gold,

@@ -1,5 +1,7 @@
 namespace MiningGame.API.Models;
 
+// MiningGame.API/Models/Material.cs
+
 public enum MaterialType
 {
     RefinedGold,

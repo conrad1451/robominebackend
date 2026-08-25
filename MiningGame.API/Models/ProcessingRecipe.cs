@@ -3,6 +3,8 @@ namespace MiningGame.API.Models;
 public record RecipeInput(MineType Type, int Quantity);
 public record RecipeOutput(MaterialType Type, int Quantity);
 
+// MiningGame.API/Models/ProcessingRecipe.cs
+
 public class ProcessingRecipe
 {
     public MaterialType Id { get; set; }

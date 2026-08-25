@@ -4,6 +4,7 @@ using MiningGame.API.Models;
 
 namespace MiningGame.API.Services;
 
+// MiningGame.API/Services/ProcessingService.cs
 public class ProcessingService
 {
     private readonly GameDbContext _context;

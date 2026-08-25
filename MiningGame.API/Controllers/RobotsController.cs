@@ -5,6 +5,8 @@ using MiningGame.API.Services;
 
 namespace MiningGame.API.Controllers;
 
+// MiningGame.API/Controllers/RobotsController.cs
+
 // CHQ: Claude AI (Sonnet) generated code
 public record BuyRobotRequest(string Type, string MineType);
 public record AssignRobotRequest(string MineType);

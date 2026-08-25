@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using MiningGame.API.Models;
 using MiningGame.API.Services;
 
+// MiningGame.API/Controllers/MinesController.cs
 namespace MiningGame.API.Controllers;
 
 // CHQ: Claude AI (Sonnet) generated code

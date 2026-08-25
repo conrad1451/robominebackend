@@ -4,6 +4,8 @@ using MiningGame.API.Models;
 
 namespace MiningGame.API.Services;
 
+// MiningGame.API/Services/RobotService.cs
+
 // CHQ: Claude AI (Sonnet) generated code
 public class RobotService
 {

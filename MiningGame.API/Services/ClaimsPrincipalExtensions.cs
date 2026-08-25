@@ -2,6 +2,9 @@ using System.Security.Claims;
 
 namespace MiningGame.API.Services;
 
+// MiningGame.API/Services/ClaimsPrincipalExtensions.cs
+
+
 // CHQ: Claude AI (Sonnet) generated code
 
 public static class ClaimsPrincipalExtensions

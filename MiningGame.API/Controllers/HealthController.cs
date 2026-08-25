@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
+// MiningGame.API/Controllers/HealthController.cs
 namespace MiningGame.API.Controllers
 {
     [ApiController]

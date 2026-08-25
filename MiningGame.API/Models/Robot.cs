@@ -7,6 +7,8 @@ public enum RobotType
     Elite
 }
 
+// MiningGame.API/Models/Robot.cs
+
 public class Robot
 {
     public Guid Id { get; set; }

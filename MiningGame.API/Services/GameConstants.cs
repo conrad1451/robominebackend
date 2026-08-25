@@ -2,6 +2,8 @@ namespace MiningGame.API.Services;
 
 using MiningGame.API.Models;
 
+// MiningGame.API/Services/GameConstants.cs
+
 // CHQ: Claude AI (Sonnet) generated code
 
 

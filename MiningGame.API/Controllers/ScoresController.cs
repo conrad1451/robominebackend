@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
+// MiningGame.API/Controllers/ScoresController.cs
+
 // CHQ: Gemini AI created file
 
 namespace MiningGame.API.Controllers
