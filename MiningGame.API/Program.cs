@@ -111,13 +111,17 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Migrations
+// Migrations & Seeding
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<GameDbContext>();
+    
+    // Applies any pending EF Core migrations to PostgreSQL
     db.Database.Migrate();
-}
 
+    // Seeds initial static data (recipes, starter values) if missing
+    DbInitializer.SeedData(db); 
+}
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
