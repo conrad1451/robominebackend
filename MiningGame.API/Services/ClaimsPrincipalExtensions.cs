@@ -2,6 +2,8 @@ using System.Security.Claims;
 
 namespace MiningGame.API.Services;
 
+// CHQ: Claude AI (Sonnet) generated code
+
 public static class ClaimsPrincipalExtensions
 {
     // Descope JWTs expose email either as the standard "email" claim or,
