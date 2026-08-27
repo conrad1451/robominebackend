@@ -75,12 +75,11 @@ builder.Services
             // Audience intentionally not validated: this API is the sole consumer of
             // tokens from this Descope project, and ValidateIssuer already pins tokens
             // to this project. Default Descope session tokens don't include an `aud`
-            // claim unless an Inbound App is configured in the Descope console.
-
-            // Same reasoning as above: `aud` is only guaranteed to equal the
-            // project ID on OIDC-compliant (templated) tokens.
-            AudienceValidator = (audiences, _, _) =>
-                audiences.Any(a => a == descopeProjectId),
+            // claim unless an Inbound App is configured in the Descope console. Note:
+            // a custom AudienceValidator delegate overrides ValidateAudience entirely
+            // if both are set, so it must be removed (not just disabled) here.            
+            // AudienceValidator = (audiences, _, _) =>
+            //     audiences.Any(a => a == descopeProjectId),
             ValidateLifetime = true
         };
     });
