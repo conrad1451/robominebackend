@@ -70,7 +70,13 @@ builder.Services
                 issuer == descopeProjectId || issuer == descopeAuthority
                     ? issuer
                     : throw new SecurityTokenInvalidIssuerException($"Invalid issuer '{issuer}'."),
-            ValidateAudience = true,
+            // ValidateAudience = true,
+            ValidateAudience = false,
+            // Audience intentionally not validated: this API is the sole consumer of
+            // tokens from this Descope project, and ValidateIssuer already pins tokens
+            // to this project. Default Descope session tokens don't include an `aud`
+            // claim unless an Inbound App is configured in the Descope console.
+
             // Same reasoning as above: `aud` is only guaranteed to equal the
             // project ID on OIDC-compliant (templated) tokens.
             AudienceValidator = (audiences, _, _) =>
