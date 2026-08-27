@@ -4,33 +4,20 @@ using MiningGame.API.Models;
 
 namespace MiningGame.API.Services;
 
-// MiningGame.API/Services/GameService.cs
-
-// CHQ: Claude AI (Sonnet) generated code
-
 public class GameService    
 {
     private readonly GameDbContext _context;
     private readonly ILogger<GameService> _logger;
 
-    private static readonly Dictionary<MineType, decimal> ORE_BASE_VALUE = new()
+    // Direct mapping from raw MineType to target MaterialType stored in player inventory
+    private static readonly Dictionary<MineType, MaterialType> MINE_TO_MATERIAL_MAP = new()
     {
-        { MineType.Gold, 70 },
-        { MineType.Silver, 15 },
-        { MineType.Copper, 12 },
-        { MineType.Iron, 5 },
-        { MineType.Lithium, 200 },
-        { MineType.RareEarth, 300 }
-    };
-
-    private static readonly Dictionary<MaterialType, decimal> MATERIAL_VALUES = new()
-    {
-        { MaterialType.RefinedGold, 450 },
-        { MaterialType.RefinedSilver, 75 },
-        { MaterialType.RefinedCopper, 12 },
-        { MaterialType.Circuits, 320 },
-        { MaterialType.Batteries, 280 },
-        { MaterialType.ConstructionSteel, 5 }
+        { MineType.Gold, MaterialType.RefinedGold },
+        { MineType.Silver, MaterialType.RefinedSilver },
+        { MineType.Copper, MaterialType.RefinedCopper },
+        { MineType.Iron, MaterialType.ConstructionSteel },
+        { MineType.Lithium, MaterialType.Batteries },
+        { MineType.RareEarth, MaterialType.Circuits }
     };
 
     public GameService(GameDbContext context, ILogger<GameService> logger)
@@ -57,8 +44,6 @@ public class GameService
             .FirstOrDefaultAsync(p => p.Email == email);
     }
 
-    // Looks up the player tied to this Descope-authenticated email, creating
-    // one (with starter mines/materials) on first login.
     public async Task<Player> GetOrCreatePlayerByEmailAsync(string email, string? preferredUsername = null)
     {
         var existing = await GetPlayerByEmailAsync(email);
@@ -71,7 +56,6 @@ public class GameService
 
         var username = preferredUsername ?? email.Split('@')[0];
 
-        // Ensure username uniqueness in the rare case of a collision.
         var baseUsername = username;
         var suffix = 1;
         while (await _context.Players.AnyAsync(p => p.Username == username))
@@ -96,7 +80,6 @@ public class GameService
         _context.Players.Add(player);
         await _context.SaveChangesAsync();
 
-        // Initialize mines
         var mineData = new[]
         {
             new { Name = "Golden Valley", Type = MineType.Gold, Depth = 100, ResourcePerSecond = 0.5m, MaxCapacity = 1000 },
@@ -121,7 +104,6 @@ public class GameService
             });
         }
 
-        // Initialize materials
         foreach (var materialType in Enum.GetValues<MaterialType>())
         {
             _context.Materials.Add(new Material
@@ -129,7 +111,7 @@ public class GameService
                 Id = Guid.NewGuid(),
                 PlayerId = player.Id,
                 Type = materialType,
-                Value = MATERIAL_VALUES[materialType],
+                Value = GameConstants.MaterialValues[materialType], // Replaced local duplicate with GameConstants
                 Quantity = 0
             });
         }
@@ -138,47 +120,46 @@ public class GameService
         return player;
     }
 
-// CHQ: Gemimi AI: handled calcuations as Anti-Cheat & Security measure
-public async Task CollectResourcesAsync(Guid playerId)
-{
-    var player = await _context.Players
-        .Include(p => p.Mines)
-        .Include(p => p.Materials)
-        .FirstOrDefaultAsync(p => p.Id == playerId);
-
-    if (player == null)
+    public async Task CollectResourcesAsync(Guid playerId)
     {
-        _logger.LogWarning("Player {PlayerId} not found when attempting to collect resources.", playerId);
-        return;
-    }
+        var player = await _context.Players
+            .Include(p => p.Mines)
+            .Include(p => p.Materials)
+            .FirstOrDefaultAsync(p => p.Id == playerId);
 
-    var now = DateTime.UtcNow;
-
-    foreach (var mine in player.Mines)
-    {
-        // Calculate seconds elapsed since last collection tick (defaulting to current time if null)
-        var lastCollected = mine.LastCollectedAt ?? now;
-        var elapsedSeconds = (decimal)(now - lastCollected).TotalSeconds;
-
-        if (elapsedSeconds <= 0) continue;
-
-        // Calculate accrued resources capped at mine capacity
-        var generatedAmount = Math.Min(elapsedSeconds * mine.ResourcePerSecond, mine.MaxCapacity);
-
-        if (generatedAmount > 0)
+        if (player == null)
         {
-            // Locate target material corresponding to mine type
-            var material = player.Materials.FirstOrDefault(m => m.Type.ToString() == mine.Type.ToString());
-            if (material != null)
-            {
-                // CHQ: Gemini - variable labeled with long
-                material.Quantity += (long)generatedAmount;
-            }
-
-            mine.LastCollectedAt = now;
+            _logger.LogWarning("Player {PlayerId} not found when attempting to collect resources.", playerId);
+            return;
         }
-    }
 
-    await _context.SaveChangesAsync();
-}
+        var now = DateTime.UtcNow;
+
+        foreach (var mine in player.Mines)
+        {
+            var lastCollected = mine.LastCollectedAt ?? now;
+            var elapsedSeconds = (decimal)(now - lastCollected).TotalSeconds;
+
+            if (elapsedSeconds <= 0) continue;
+
+            var generatedAmount = Math.Min(elapsedSeconds * mine.ResourcePerSecond, mine.MaxCapacity);
+
+            if (generatedAmount > 0)
+            {
+                // Key Fix: Correctly lookup target material type using MINE_TO_MATERIAL_MAP
+                if (MINE_TO_MATERIAL_MAP.TryGetValue(mine.Type, out var targetMaterialType))
+                {
+                    var material = player.Materials.FirstOrDefault(m => m.Type == targetMaterialType);
+                    if (material != null)
+                    {
+                        material.Quantity += (long)generatedAmount;
+                    }
+                }
+
+                mine.LastCollectedAt = now;
+            }
+        }
+
+        await _context.SaveChangesAsync();
+    }
 }
