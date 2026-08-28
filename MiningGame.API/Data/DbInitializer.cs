@@ -1,19 +1,17 @@
+using Microsoft.EntityFrameworkCore;
 using MiningGame.API.Data;
 
-namespace MiningGame.API.Data
-{
-    public static class DbInitializer
-    {
-        public static void SeedData(GameDbContext db)
-        {
-            // Ensures the database exists
-            db.Database.EnsureCreated();
+namespace MiningGame.API.Data;
 
-            // Example: Add initial reference data or default entries if empty
-            // if (!db.Mines.Any()) { ... }
-            
-            db.SaveChanges();
-            // Add initial database seeding logic here if tables are empty
-        }
+public static class DbInitializer
+{
+    public static async Task SeedDataAsync(GameDbContext db)
+    {
+        // Rely exclusively on migrations in production environments to maintain standard EF Core migration history tracking.
+        // Add static reference/lookup table seeding here if missing.
+        // Example:
+        // if (!await db.Recipes.AnyAsync()) { ... }
+
+        await db.SaveChangesAsync();
     }
 }

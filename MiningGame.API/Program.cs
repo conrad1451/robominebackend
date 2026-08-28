@@ -114,19 +114,21 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// CHQ: Gemini AI: refactored to invoke the async seeding method:
 var app = builder.Build();
 
-// Migrations & Seeding
+// Migrations & Seeding Pipeline
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<GameDbContext>();
     
-    // Applies any pending EF Core migrations to PostgreSQL
-    db.Database.Migrate();
+    // Applies any pending EF Core migrations to PostgreSQL asynchronously
+    await db.Database.MigrateAsync();
 
-    // Seeds initial static data (recipes, starter values) if missing
-    DbInitializer.SeedData(db); 
+    // Seeds initial static data asynchronously
+    await DbInitializer.SeedDataAsync(db); 
 }
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -139,7 +141,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-app.Run();
+await app.RunAsync();
 
 static string ConvertPostgresUrlToConnectionString(string url)
 {
