@@ -9,17 +9,6 @@ public class GameService
     private readonly GameDbContext _context;
     private readonly ILogger<GameService> _logger;
 
-    // Direct mapping from raw MineType to target MaterialType stored in player inventory
-    private static readonly Dictionary<MineType, MaterialType> MINE_TO_MATERIAL_MAP = new()
-    {
-        { MineType.Gold, MaterialType.RefinedGold },
-        { MineType.Silver, MaterialType.RefinedSilver },
-        { MineType.Copper, MaterialType.RefinedCopper },
-        { MineType.Iron, MaterialType.ConstructionSteel },
-        { MineType.Lithium, MaterialType.Batteries },
-        { MineType.RareEarth, MaterialType.Circuits }
-    };
-
     public GameService(GameDbContext context, ILogger<GameService> logger)
     {
         _context = context;
@@ -124,7 +113,6 @@ public class GameService
     {
         var player = await _context.Players
             .Include(p => p.Mines)
-            .Include(p => p.Materials)
             .FirstOrDefaultAsync(p => p.Id == playerId);
 
         if (player == null)
@@ -142,22 +130,24 @@ public class GameService
 
             if (elapsedSeconds <= 0) continue;
 
-            var generatedAmount = Math.Min(elapsedSeconds * mine.ResourcePerSecond, mine.MaxCapacity);
+            // Room left in the stockpile before hitting MaxCapacity - ore
+            // generated beyond this is lost, matching the mine's stated cap.
+            var remainingCapacity = Math.Max(mine.MaxCapacity - mine.TotalExtracted, 0);
+            var generatedAmount = Math.Min(elapsedSeconds * mine.ResourcePerSecond, remainingCapacity);
 
             if (generatedAmount > 0)
             {
-                // Key Fix: Correctly lookup target material type using MINE_TO_MATERIAL_MAP
-                if (MINE_TO_MATERIAL_MAP.TryGetValue(mine.Type, out var targetMaterialType))
-                {
-                    var material = player.Materials.FirstOrDefault(m => m.Type == targetMaterialType);
-                    if (material != null)
-                    {
-                        material.Quantity += (long)generatedAmount;
-                    }
-                }
+                // Raw ore accumulates in the mine's own stockpile. It only
+                // becomes a sellable Material once ProcessingService runs a
+                // recipe on it (or is sold as raw ore via SellOreAsync).
+                mine.TotalExtracted += generatedAmount;
 
-                mine.LastCollectedAt = now;
+                var minedUnits = (long)generatedAmount;
+                mine.LifetimeExtracted += minedUnits;
+                player.TotalMined += minedUnits;
             }
+
+            mine.LastCollectedAt = now;
         }
 
         await _context.SaveChangesAsync();
